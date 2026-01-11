@@ -68,20 +68,37 @@ services:
     networks:
       - laravel
 
-  nginx:
-    image: nginx:alpine
-    container_name: nginx
+  apache:
+    container_name: apache
+    build:
+      context: .
+      dockerfile: ./apache/Dockerfile
     ports:
       - "80:80"
     volumes:
       - ../backend:/var/www
-      - ../frontend:/usr/share/nginx/html/frontend
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ../frontend:/usr/local/apache2/htdocs/frontend
+      - ./apache/shopshop.conf:/usr/local/apache2/conf/extra/shopshop.conf
     depends_on:
       php:
         condition: service_started
     networks:
       - laravel
+
+#   nginx:
+#     image: nginx:alpine
+#     container_name: nginx
+#     ports:
+#       - "80:80"
+#     volumes:
+#       - ../backend:/var/www
+#       - ../frontend:/usr/share/nginx/html/frontend
+#       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+#     depends_on:
+#       php:
+#         condition: service_started
+#     networks:
+#       - laravel
 
 volumes:
   mysql_data:
