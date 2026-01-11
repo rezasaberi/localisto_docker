@@ -79,6 +79,7 @@ services:
       - ../backend:/var/www
       - ../frontend:/usr/local/apache2/htdocs/frontend
       - ./apache/shopshop.conf:/usr/local/apache2/conf/extra/shopshop.conf
+      - ../index.html:/usr/local/apache2/htdocs/index.html
     depends_on:
       php:
         condition: service_started
