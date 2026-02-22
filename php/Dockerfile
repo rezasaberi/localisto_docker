@@ -2,7 +2,7 @@ FROM php:8.3-fpm
 
 # Install system dependencies and libraries
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip \
+    git nano vim net-tools curl zip unzip \
     libpq-dev \
     libonig-dev \
     libxml2-dev \
