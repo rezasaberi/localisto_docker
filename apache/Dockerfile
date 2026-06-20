@@ -13,5 +13,5 @@ RUN sed -i \
     conf/httpd.conf
 
 # Include our custom config
-COPY apache/shopshop.conf /usr/local/apache2/conf/extra/shopshop.conf
-RUN echo "Include conf/extra/shopshop.conf" >> conf/httpd.conf
+COPY apache/localisto.conf /usr/local/apache2/conf/extra/localisto.conf
+RUN echo "Include conf/extra/localisto.conf" >> conf/httpd.conf

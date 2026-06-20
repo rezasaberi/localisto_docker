@@ -1,6 +1,6 @@
 services:
   php:
-    container_name: php
+    container_name: localisto-php
     build:
       context: .
       dockerfile: ./php/Dockerfile
@@ -17,7 +17,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - laravel
+      - localisto-network
     ports:
       - "6001:6001"
     entrypoint: >
@@ -28,43 +28,49 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: localisto-rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - laravel
+      - localisto-network
 
   mysqldb:
     image: mysql:8.0
-    container_name: mysqldb
+    container_name: localisto-mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: shopshop
+      MYSQL_DATABASE: localisto
       MYSQL_ROOT_PASSWORD: saberi
+      MYSQL_USER: localisto_user
+      MYSQL_PASSWORD: localpass
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - laravel
+      - localisto-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
+      # Use CMD-SHELL so the MYSQL_ROOT_PASSWORD environment variable is expanded inside the container.
+      # Use $$ to escape the $ so Compose does not substitute it at config time; Compose will send a single $ to the container.
+      test: ["CMD-SHELL", "mysqladmin --protocol=TCP ping -h localisto-mysql -u root -p\"$$MYSQL_ROOT_PASSWORD\" >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 20s
       retries: 10
+      start_period: 90s
 
   redis:
     image: redis:7
-    container_name: redis
+    container_name: localisto-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - laravel
+      - localisto-network
 
   apache:
-    container_name: apache
+    container_name: localisto-apache
     build:
       context: .
       dockerfile: ./apache/Dockerfile
@@ -73,13 +79,12 @@ services:
     volumes:
       - ../backend:/var/www
       - ../frontend:/usr/local/apache2/htdocs/frontend
-      - ./apache/shopshop.conf:/usr/local/apache2/conf/extra/shopshop.conf
-      - ../index.html:/usr/local/apache2/htdocs/index.html
+      - ./apache/localisto.conf:/usr/local/apache2/conf/extra/localisto.conf
     depends_on:
       php:
         condition: service_started
     networks:
-      - laravel
+      - localisto-network
 
 #   nginx:
 #     image: nginx:alpine
@@ -101,4 +106,4 @@ volumes:
   redis_data:
 
 networks:
-  laravel:
+  localisto-network:
