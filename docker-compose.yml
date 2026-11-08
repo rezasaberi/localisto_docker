@@ -1,6 +1,6 @@
 services:
   php:
-    container_name: localisto-php
+    container_name: php_localisto
     build:
       context: .
       dockerfile: ./php/Dockerfile
@@ -8,7 +8,7 @@ services:
       - ../backend:/var/www
       - ./php/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
     depends_on:
-      mysqldb:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_started
@@ -17,7 +17,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
-      - localisto-network
+      - localisto
     ports:
       - "6001:6001"
     entrypoint: >
@@ -28,32 +28,32 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: localisto-rabbitmq
+    container_name: rabbitmq_localisto
     ports:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - localisto-network
+      - localisto
 
-  mysqldb:
+  mysql:
     image: mysql:8.0
-    container_name: localisto-mysql
+    container_name: mysql_localisto
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: localisto
       MYSQL_ROOT_PASSWORD: saberi
       MYSQL_USER: localisto_user
-      MYSQL_PASSWORD: localpass
+      MYSQL_PASSWORD: localisto_pass
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
-      - localisto-network
+      - localisto
     healthcheck:
       # Use CMD-SHELL so the MYSQL_ROOT_PASSWORD environment variable is expanded inside the container.
       # Use $$ to escape the $ so Compose does not substitute it at config time; Compose will send a single $ to the container.
-      test: ["CMD-SHELL", "mysqladmin --protocol=TCP ping -h localisto-mysql -u root -p\"$$MYSQL_ROOT_PASSWORD\" >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin --protocol=TCP ping -h mysql_localisto -u root -p\"$$MYSQL_ROOT_PASSWORD\" >/dev/null 2>&1 || exit 1"]
       interval: 10s
       timeout: 20s
       retries: 10
@@ -61,49 +61,33 @@ services:
 
   redis:
     image: redis:7
-    container_name: localisto-redis
+    container_name: redis_localisto
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - localisto-network
+      - localisto
 
-  apache:
-    container_name: localisto-apache
-    build:
-      context: .
-      dockerfile: ./apache/Dockerfile
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_localisto
     ports:
       - "80:80"
     volumes:
       - ../backend:/var/www
-      - ../frontend:/usr/local/apache2/htdocs/frontend
-      - ./apache/localisto.conf:/usr/local/apache2/conf/extra/localisto.conf
+      - ../index.html:/usr/share/nginx/html/index.html:ro
+      - ../frontend:/usr/share/nginx/html/frontend
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       php:
         condition: service_started
     networks:
-      - localisto-network
-
-#   nginx:
-#     image: nginx:alpine
-#     container_name: nginx
-#     ports:
-#       - "80:80"
-#     volumes:
-#       - ../backend:/var/www
-#       - ../frontend:/usr/share/nginx/html/frontend
-#       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-#     depends_on:
-#       php:
-#         condition: service_started
-#     networks:
-#       - laravel
+      - localisto
 
 volumes:
   mysql_data:
   redis_data:
 
 networks:
-  localisto-network:
+  localisto:
